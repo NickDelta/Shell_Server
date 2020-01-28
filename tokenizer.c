@@ -114,10 +114,7 @@ commandType get_commandType(cmdHolder* n, int index)
     if(n->commands[index] != NULL)
         return n->commands[index]->type;
     else
-    {
-        fprintf(stderr,"Error: Forbidden access. Exiting...");
-        exit(EXIT_FAILURE);
-    }
+        return -1;
 }
 void free_cmdHolder(cmdHolder* n)
 {

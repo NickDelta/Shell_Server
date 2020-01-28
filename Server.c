@@ -368,39 +368,43 @@ int connection_handler(int sockfd, int client_id)
             send_all(sockfd, "Could not parse any commands. Did you type anything?", 53);
         }
         //If the client has pressed only exit
-        else if (cmds->current_size == 1 &&
-                 cmds->commands[0]->current_args_size == 1 &&
-                 strcmp(get_arguments(cmds, 0)[0], "exit") == 0 )
+        else if ( strcmp(get_arguments(cmds, 0)[0], "exit") == 0 )
         {
-            printf("Client #%d requested exit. Process: %d\n", client_id, getpid());
-
-            int shut_res = close(sockfd);
-            if (shut_res < 0)
-                perror("Socket shutdown failed");
-            return EXIT_SUCCESS;
-        }
-        //If the client has typed cd with 1 argument
-        else if (cmds->current_size == 1 &&
-                 cmds->commands[0]->current_args_size == 2 &&
-                 strcmp(get_arguments(cmds, 0)[0], "cd") == 0)
-        {
-            //Change the directory
-            int exit_code = chdir(get_arguments(cmds, 0)[1]);
-            if(exit_code < 0)
+            if(cmds->current_size == 1 &&
+               cmds->commands[0]->current_args_size == 1 )
             {
-                //If error occurs send the error message through sockets
-                char* error_msg = strerror(errno);
-                send_all(sockfd, error_msg, strlen(error_msg) + 1);
+                printf("Client #%d requested exit. Process: %d\n", client_id, getpid());
+
+                int shut_res = close(sockfd);
+                if (shut_res < 0)
+                {
+                    perror("Socket shutdown failed");
+                    return EXIT_FAILURE;
+                }
+                return EXIT_SUCCESS;
             }
             else
-                send_all(sockfd, "Successfully changed directory", 31);
-
+                send_all(sockfd, "exit: Syntax error: no arguments or other commands must be provided", 68);
         }
-        //Notify the client user for incorrect use of special commands if necessary
-        else if(strcmp(get_arguments(cmds, 0)[0], "cd") == 0 ||
-                strcmp(get_arguments(cmds, 0)[0], "exit") == 0)
+        //If the client has typed cd with 1 argument
+        else if ( strcmp(get_arguments(cmds, 0)[0], "cd") == 0 )
         {
-            send_all(sockfd, "Wrong usage of cd/exit command", 31);
+            if(cmds->current_size == 1 &&
+               cmds->commands[0]->current_args_size == 2 )
+            {
+                //Change the directory
+                int exit_code = chdir(get_arguments(cmds, 0)[1]);
+                if (exit_code < 0)
+                {
+                    //If error occurs send the error message through sockets
+                    char *error_msg = strerror(errno);
+                    send_all(sockfd, error_msg, strlen(error_msg) + 1);
+                } else
+                    send_all(sockfd, "Successfully changed directory", 31);
+            }
+            else
+                send_all(sockfd,"cd: Syntax error: 1 argument and no other commands must be provided", 68);
+
         }
         //Execute the supplied command(s) as exec-supported
         else
